@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import Rectangle from '../Rectangle';
 
 const useEventHandler = (canvas: HTMLCanvasElement) => {
-  const context: CanvasRenderingContext2D = canvas.getContext('2d');
+  const context: CanvasRenderingContext2D = canvas?.getContext('2d');
   const [isMouseDown, setIsMousedown] = useState(false);
   const [isMouseMove, setIsMouseMove] = useState(false);
   const [isKeyDownFromMeta, setIsKeyDownFromMeta] = useState(false);
@@ -10,7 +10,7 @@ const useEventHandler = (canvas: HTMLCanvasElement) => {
   const [removeHistories, setRemoveHistories] = useState<Array<Rectangle>>([]);
 
   // コンテキストをクリア
-  const clearContext = (): void => context.clearRect(0, 0, canvas.width, canvas.height);
+  const clearContext = (): void => context!.clearRect(0, 0, canvas.width, canvas.height);
 
   // 座標を取得して描画処理を行う
   const drawWithCoordinates = (event: MouseEvent, rectangle: Rectangle, isClear: boolean = false): void => {
@@ -94,4 +94,4 @@ const useEventHandler = (canvas: HTMLCanvasElement) => {
   return { mouseDownEvent, mouseMoveEvent, mouseUpEvent, keyControlFromDown, keyControlFromUp };
 }
 
-export default useEventHandler
+export default useEventHandler;
