@@ -68,46 +68,12 @@ const Canvas = (props: CanvasProfile) => {
     setIsMousedown(false);
     rectangle.initializeCoordinates();
   }
-
-  const getRectFromToPopAnotherArray = (popArray: Array<Rectangle>): Rectangle => {
-    if (popArray.length < 1) {
-      return
-    }
-
-    const pushRect: Rectangle = popArray.pop();
-    return pushRect;
-  }
-
-  const keyControlFromDown = (event: KeyboardEvent): void => {
-    console.log(event.key)
-    const keyName: string = event.key;
-
-    if (keyName === 'Meta' || keyName === 'Control') {
-      setIsKeyDownFromMeta(true);
-    }
-
-    if (keyName === 'Backspace') {
-      console.log(histories)
-      const pushRect = getRectFromToPopAnotherArray(histories);
-      setRemoveHistories([...removeHistories, new Rectangle(pushRect.getXCoordinate, pushRect.getYCoordinate, pushRect.getWidthCoordinate, pushRect.getHeightCoordinate)])
-    } else if (keyName === 'z' && isKeyDownFromMeta) {
-      const pushRect = getRectFromToPopAnotherArray(removeHistories);
-      setRemoveHistories([...removeHistories, new Rectangle(pushRect.getXCoordinate, pushRect.getYCoordinate, pushRect.getWidthCoordinate, pushRect.getHeightCoordinate)])
-    }
-  }
-
-  const keyControlFromUp = (event: KeyboardEvent): void => {
-    const keyName: string = event.key;
-
-    if (!(keyName === 'Meta' || keyName === 'Control')) {
-      return
-    }
-
-    setIsKeyDownFromMeta(false);
-  }
-
+  
+  const { keyControlFromDown, keyControlFromUp } = useEventHandler(histories)
   useEffect(() => {
-    setContext(canvasRef.current.getContext('2d'))
+    setContext(canvasRef.current.getContext('2d'));
+    keyControlFromDown()
+    keyControlFromUp()
   }, [context])
 
 
@@ -120,8 +86,6 @@ const Canvas = (props: CanvasProfile) => {
       onMouseDown={(e: React.MouseEvent<HTMLCanvasElement>) => mouseDownEvent(changeToNativeEvent(e), rectangle)}
       onMouseMove={(e: React.MouseEvent<HTMLCanvasElement>) => mouseMoveEvent(changeToNativeEvent(e), rectangle)}
       onMouseUp={(e: React.MouseEvent<HTMLCanvasElement>) => mouseUpEvent(rectangle)}
-      onKeyDown={(e) => keyControlFromDown(changeToNativeEvent(e))}
-      onKeyUp={(e) => keyControlFromUp(changeToNativeEvent(e))}
     />
   );
 }
