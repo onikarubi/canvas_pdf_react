@@ -46,7 +46,6 @@ class Rectangle {
     this.h = 0;
   }
 
-
   public get getXCoordinate() : number {
     return this.x;
   }

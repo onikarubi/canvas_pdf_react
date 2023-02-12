@@ -71,6 +71,8 @@ class CanvasEventHandler {
         this.metaKeyDown = true;
       }
 
+
+      /* この部分を追加する必要あり */
       if (keyName === 'Backspace') {
         this.enqueueFromHistoryToStackAnotherArray(historyRects, removeRects);
         this.context.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);

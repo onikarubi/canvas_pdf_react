@@ -1,5 +1,4 @@
-import React, { createRef, EventHandler, KeyboardEventHandler, MouseEventHandler, useEffect, useRef, useState } from 'react'
-import useEventHandler from './hooks/useEventHandler';
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Rectangle from './Rectangle';
 
 type CanvasProfile = {
@@ -16,9 +15,8 @@ const Canvas = (props: CanvasProfile) => {
 
   const canvas = canvasRef.current;
   const [context, setContext] = useState<CanvasRenderingContext2D>(null);
-  const [isMouseDown, setIsMousedown] = useState(false);
-  const [isMouseMove, setIsMouseMove] = useState(false);
-  const [isKeyDownFromMeta, setIsKeyDownFromMeta] = useState(false);
+  const [isMouseDown, setIsMousedown] = useState<boolean>(false);
+  const [isMouseMove, setIsMouseMove] = useState<boolean>(false);
   const [histories, setHistories] = useState<Array<Rectangle>>([]);
   const [removeHistories, setRemoveHistories] = useState<Array<Rectangle>>([]);
 
@@ -26,13 +24,9 @@ const Canvas = (props: CanvasProfile) => {
   const clearContext = (): void => context!.clearRect(0, 0, canvas.width, canvas.height);
 
   // 座標を取得して描画処理を行う
-  const drawWithCoordinates = (event: MouseEvent, rectangle: Rectangle, isClear: boolean = false): void => {
+  const drawWithCoordinates = (event: MouseEvent, rectangle: Rectangle): void => {
+    clearContext();
     rectangle.getCoordinateFromMousePosition(event, isMouseMove);
-
-    if (isClear) {
-      clearContext();
-    }
-
     rectangle.drawRect(context);
   }
 
@@ -58,35 +52,85 @@ const Canvas = (props: CanvasProfile) => {
     }
 
     setIsMouseMove(true);
-    drawWithCoordinates(event, rectangle, true);
+    drawWithCoordinates(event, rectangle);
     drawAllRectangleFromHistory(histories);
   }
 
-  const mouseUpEvent = (rectangle: Rectangle): void => {
-    setHistories([...histories, new Rectangle(rectangle.getXCoordinate, rectangle.getYCoordinate, rectangle.getWidthCoordinate, rectangle.getHeightCoordinate)]);
+  const mouseUpEvent = useCallback((rectangle: Rectangle): void => {
+    setHistories(prev => {
+      const inputArray = [...prev, new Rectangle(rectangle.getXCoordinate, rectangle.getYCoordinate, rectangle.getWidthCoordinate, rectangle.getHeightCoordinate)]
+      return inputArray
+    });
     setIsMouseMove(false);
     setIsMousedown(false);
     rectangle.initializeCoordinates();
+  }, [histories, setHistories])
+
+  const restoreRect = () => {
+    if (removeHistories.length < 1) {
+      return;
+    }
+
+    const restoreRect = removeHistories.pop();
+
+    restoreRect.drawRect(context);
+    setHistories([...histories, new Rectangle(restoreRect.getXCoordinate, restoreRect.getYCoordinate, restoreRect.getWidthCoordinate, restoreRect.getHeightCoordinate)])
   }
-  
-  const { keyControlFromDown, keyControlFromUp } = useEventHandler(histories)
+
+
+  const keyDownFromBackspace = (event: KeyboardEvent) => {
+    if (event.key === 'Backspace') {
+      if (histories.length < 1) {
+        return
+      }
+
+      const updateHistories = histories.pop();
+      setRemoveHistories([...removeHistories, new Rectangle(updateHistories.getXCoordinate, updateHistories.getYCoordinate, updateHistories.getWidthCoordinate, updateHistories.getHeightCoordinate)])
+      clearContext()
+
+      histories.forEach(rectangle => {
+        rectangle.drawRect(context);
+      });
+    }
+  }
+
+  const keyDownFromZKey = (event: KeyboardEvent) => {
+    if (event.ctrlKey || event.metaKey) {
+      if (!(event.key === 'z')) {
+        return
+      }
+
+      restoreRect();
+    }
+  }
+
+  useEffect(() => {
+    document.addEventListener('keydown', keyDownFromBackspace);
+    document.addEventListener('keydown', keyDownFromZKey);
+
+    return () => {
+      document.removeEventListener('keydown', keyDownFromBackspace);
+      document.removeEventListener('keydown', keyDownFromZKey);
+    }
+  }, [histories, removeHistories])
+
+
   useEffect(() => {
     setContext(canvasRef.current.getContext('2d'));
-    keyControlFromDown()
-    keyControlFromUp()
   }, [context])
 
-
   return (
-    <canvas
-      style={{border: "solid 1px #000"}}
-      ref={canvasRef}
-      width={canvasWidth}
-      height={canvasHeight}
-      onMouseDown={(e: React.MouseEvent<HTMLCanvasElement>) => mouseDownEvent(changeToNativeEvent(e), rectangle)}
-      onMouseMove={(e: React.MouseEvent<HTMLCanvasElement>) => mouseMoveEvent(changeToNativeEvent(e), rectangle)}
-      onMouseUp={(e: React.MouseEvent<HTMLCanvasElement>) => mouseUpEvent(rectangle)}
-    />
+    <>
+      <canvas
+        style={{ border: "solid 1px #000" }}
+        ref={canvasRef}
+        width={canvasWidth}
+        height={canvasHeight}
+        onMouseDown={(e: React.MouseEvent<HTMLCanvasElement>) => mouseDownEvent(changeToNativeEvent(e), rectangle)}
+        onMouseMove={(e: React.MouseEvent<HTMLCanvasElement>) => mouseMoveEvent(changeToNativeEvent(e), rectangle)}
+        onMouseUp={() => mouseUpEvent(rectangle)}
+      />
+    </>
   );
 }
 
